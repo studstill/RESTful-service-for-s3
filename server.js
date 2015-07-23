@@ -2,12 +2,13 @@ var express = require('express');
 var app = express();
 var mongoose = require('mongoose');
 var port = process.env.PORT || 3000;
-var userRouter = express.Router();
+var userRouter = require('./routers/user-router');
 
-mongoose.connection(process.env.MONGOLAB_URI || 'mongodb://localhost/users');
 
-require('./user-router')(userRouter);
-app.use('/api', userRouter);
+mongoose.connect(process.env.MONGOLAB_URI || 'mongodb://localhost/users');
+
+
+app.use('/users', userRouter);
 
 
 app.listen(port, function() {

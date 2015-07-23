@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Jason Studstill",
+  "author": "Jason Studstill and Vi",
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1.39",
