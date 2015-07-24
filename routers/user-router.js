@@ -9,7 +9,7 @@ var s3 = new AWS.S3();
 module.exports = function(router) {
   router.use(bodyParser.json());
 
-//  AWS.config.loadFromPath(__dirname + '/../config.json');
+/ / AWS.config.loadFromPath(__dirname + '/../config.json');
 
   router.route('/')
     .get(function(req, res) {
