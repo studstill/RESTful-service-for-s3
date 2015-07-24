@@ -1,14 +1,17 @@
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
+var EventEmitter = require('events').EventEmitter;
+var ee = new EventEmitter();
 var User = require('../models/User');
 var File = require('../models/File');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
+var ourBucket = 'vihjayjay';
 
 module.exports = function(router) {
   router.use(bodyParser.json());
 
- AWS.config.loadFromPath(__dirname + '/../config.json');
+  AWS.config.loadFromPath(__dirname + '/../config.json');
 
   router.route('/')
     .get(function(req, res) {
@@ -72,58 +75,82 @@ module.exports = function(router) {
   router.route('/:user/files')
     .get(function(req, res) {
       var userId = req.params.user
-      var info;
+      var info = [];
       User.findOne({username: userId}, function(err, user) {
+        if (err) return console.log(err);
+        console.log(user);
         for (var i = 0; i < user.files.length; i++) {
-          var fileName = user.files[i];
-          File.findById(fileName, function(err, file) {
-            var params = {Bucket: 'vihjayjay', Key: userId + '/' + file.fileName};
-            s3.getObject(params, function(err, data) {
+          (function(i) {
+            var fileName = user.files[i];
+            File.findById(fileName, function(err, file) {
               if (err) return console.log(err);
-              console.log(data.Body);
-            }); 
-          })
+              info.push(file.fileName);
+              if (i === user.files.length - 1) {
+                ee.emit('listFiles', info);
+              }
+            });
+          })(i);
         }
-        // res.json(info.data);
       });
-      // s3.listObjects({Bucket: 'vihjayjay'}, function(err, data) {
-      //   if (err) return console.log(err);
-      //   console.log(data);
-      // });
-      // res.json({msg: 'got the /users/' + userId + '/file get route!'});
+      ee.on('listFiles', function(filesList) {
+        res.json({files: filesList});
+      });
     })
     .post(function(req, res) {
-      var userId = req.params.user
+      var userId = req.params.user;
       var file = new File(req.body);
+
+      User.findOne({username: userId}, function(err, user) {
+        if (err) return console.log(err);
+        user.files.push(file._id);
+        user.save();
+        console.log(user);
+      });
+
+      var params = {Bucket: ourBucket, Key: userId + '/' + file.fileName, Body: file.content };
+      var url = s3.getSignedUrl('putObject', params, function(err, url) {
+        if (err) return console.log(err);
+        file.url = url;
+      });
+      
+      s3.putObject(params, function(err, data) {
+        if (err) return console.log(err);
+        console.log('we did It!!!!!!');
+      });
 
       file.save(function(err, file) {
         if (err) console.log(err);
         console.log(file);
       });
 
-      User.update({username: userId}, {$set: {files: file}}, function(err, user) {
-        if (err) return console.log(err);
-        console.log(user);
-      });
-
-      var params = {Bucket: 'vihjayjay', Key: userId + '/' + file.fileName, Body: file.content };
-      s3.putObject(params, function(err, data) {
-        if (err) return console.log(err);
-        console.log('we did It!!!!!!');
-      });
-
       // res.json({msg: 'got the /users/' +user + '/file post route!'});
     })
     .delete(function(req, res) {
-      var userId = req.params.user
+      var userId = req.params.user;
       res.json({msg: 'got the /users/' +userId + '/file delete route!'});
     });
 
 
   router.route('/:user/files/:file')
     .get(function(req, res) {
-      var user = req.params.user
-      var file = req.params.file
+      // var user = req.params.user
+      // var file = req.params.file
+      var userId = req.params.user
+      var info;
+      User.findOne({username: userId}, function(err, user) {
+        for (var i = 0; i < user.files.length; i++) {
+          (function(i) {
+            var fileName = user.files[i];
+            File.findById(fileName, function(err, file) {
+              var params = {Bucket: ourBucket, Key: userId + '/' + file.fileName};
+              s3.getObject(params, function(err, data) {
+                if (err) return console.log(err);
+                console.log(data.Body.toString());
+              }); 
+            });
+          })(i);
+        }
+      });
       res.json({msg: 'got the /users/' + user + '/file/' + file + ' get route!'});
     })
     .put(function(req, res) {
