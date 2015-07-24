@@ -3,8 +3,6 @@ var app = express();
 var mongoose = require('mongoose');
 var port = process.env.PORT || 3000;
 
-
-
 mongoose.connect(process.env.MONGOLAB_URI || 'mongodb://localhost/users');
 
 var userRouter = express.Router();

@@ -5,11 +5,14 @@ var File = require('../models/File');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
 
-
 module.exports = function(router) {
   router.use(bodyParser.json());
 
+<<<<<<< HEAD
   AWS.config.loadFromPath('./config.json');
+=======
+ AWS.config.loadFromPath(__dirname + '/../config.json');
+>>>>>>> 11bbebddd91f5d7cbaf751a6180ad882fa14ade6
 
   router.route('/')
     .get(function(req, res) {
@@ -72,17 +75,51 @@ module.exports = function(router) {
 
   router.route('/:user/files')
     .get(function(req, res) {
+<<<<<<< HEAD
       var userId = req.params.user;
       res.json({msg: 'got the /users/' + userId + '/file get route!'});
+=======
+      var userId = req.params.user
+      var info;
+      User.findOne({username: userId}, function(err, user) {
+        for (var i = 0; i < user.files.length; i++) {
+          var fileName = user.files[i];
+          File.findById(fileName, function(err, file) {
+            var params = {Bucket: 'vihjayjay', Key: userId + '/' + file.fileName};
+            s3.getObject(params, function(err, data) {
+              if (err) return console.log(err);
+              console.log(data.Body);
+            }); 
+          })
+        }
+        // res.json(info.data);
+      });
+      // s3.listObjects({Bucket: 'vihjayjay'}, function(err, data) {
+      //   if (err) return console.log(err);
+      //   console.log(data);
+      // });
+      // res.json({msg: 'got the /users/' + userId + '/file get route!'});
+>>>>>>> 11bbebddd91f5d7cbaf751a6180ad882fa14ade6
     })
     .post(function(req, res) {
       var userId = req.params.user
+      var file = new File(req.body);
 
-        var params = {Bucket: 'vihjayjay', Key: userId + '/' + req.body.fileName, Body: req.body.content };
-        s3.putObject(params, function(err, data) {
-          if (err) return console.log(err);
-          console.log('we did It!!!!!!');
-        });
+      file.save(function(err, file) {
+        if (err) console.log(err);
+        console.log(file);
+      });
+
+      User.update({username: userId}, {$set: {files: file}}, function(err, user) {
+        if (err) return console.log(err);
+        console.log(user);
+      });
+
+      var params = {Bucket: 'vihjayjay', Key: userId + '/' + file.fileName, Body: file.content };
+      s3.putObject(params, function(err, data) {
+        if (err) return console.log(err);
+        console.log('we did It!!!!!!');
+      });
 
       // res.json({msg: 'got the /users/' +user + '/file post route!'});
     })
