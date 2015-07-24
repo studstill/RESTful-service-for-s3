@@ -112,7 +112,7 @@ module.exports = function(router) {
         if (err) return console.log(err);
         file.url = url;
       });
-      
+
       s3.putObject(params, function(err, data) {
         if (err) return console.log(err);
         console.log('we did It!!!!!!');
@@ -146,7 +146,7 @@ module.exports = function(router) {
               s3.getObject(params, function(err, data) {
                 if (err) return console.log(err);
                 console.log(data.Body.toString());
-              }); 
+              });
             });
           })(i);
         }
