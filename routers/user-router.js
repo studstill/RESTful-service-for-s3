@@ -9,7 +9,7 @@ var s3 = new AWS.S3();
 module.exports = function(router) {
   router.use(bodyParser.json());
 
-//  AWS.config.loadFromPath(__dirname + '/../config.json');
+  AWS.config.loadFromPath('./config.json');
 
   router.route('/')
     .get(function(req, res) {
@@ -57,12 +57,6 @@ module.exports = function(router) {
     })
     .delete(function(req, res) {
       var userId = req.params.user;
-      /*User.remove({username: userId}, function(err) {
-        if (err) {
-          return res.status(500).json({msg: 'could not delete' + userId});
-        }
-        res.json({msg: 'deleted the /users/' + userId});
-      });*/
       User.findOne({username: userId}, function(err, data) {
         if (err) {
           return res.status(500).json({msg: 'server error at /user/' + userId});
@@ -78,7 +72,7 @@ module.exports = function(router) {
 
   router.route('/:user/files')
     .get(function(req, res) {
-      var userId = req.params.user
+      var userId = req.params.user;
       res.json({msg: 'got the /users/' + userId + '/file get route!'});
     })
     .post(function(req, res) {
