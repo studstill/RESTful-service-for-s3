@@ -44,8 +44,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
 
       User.findOne({username: userId}, {file: file}, function(err, user) {
         if (err) {
-          console.log('That filename already exists, and was successfully' +
-            'overwritten!');
+          console.log('That filename already exists!');
         }
         User.findOne({username: userId}, function(err, user) {
           user.files.push(file._id);
