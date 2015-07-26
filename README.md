@@ -1,3 +1,10 @@
+# To Test:
+
+- Open a terminal window and type `mongod`
+- Open another terminal window and clone this repo to a local directory
+- In the cloned repo directory, type `npm install`
+- Then type `npm test`
+
 #Purpose of this application
 
 This app will have a collection of users, and each user will have a collection of files. However, this API will not accept actual files, nor will it return actual files (HTTP with binary data, while possible, is a little messy for the purposes of this assignment). Instead, when creating a new file, you will post a json representation of a file, such as:
@@ -33,3 +40,6 @@ In an attempt to be as RESTful as possible, this app contains the following rout
 - GET /user/:user/files/:file
 
 - PUT /user/:user/files/:file (replaces an already existing file, or updates it)
+
+
+
