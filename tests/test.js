@@ -39,6 +39,16 @@ describe('Test server routes', function() {
   });
 
   describe('get routes', function() {
+
+    it('should respond with a 404 when given a bad route', function(done) {
+        chai.request('http://localhost:3000')
+            .get('/blah')
+            .end(function(err, res) {
+              expect(res).to.have.status(404);
+              done();
+            });
+      });
+
     it('should get response at get /users', function(done) {
       chai.request('http://localhost:3000')
         .get('/users')
@@ -152,7 +162,7 @@ describe('Test server routes', function() {
       user.save();
       var file = new File({"fileName": "myJournal", "content": "I know nothing"});
       file.save();
-
+      user.files.push(file._id);
       s3.putObject({Bucket: testBucket, Key: 'jonSnow/myJournal', Body: file.content}, function() {
           done();
       });
