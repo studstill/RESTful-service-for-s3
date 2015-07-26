@@ -100,7 +100,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                 if (err) return res.status(500).json({msg: 'server error at /' + userId + '/files'});
                 if (file) {
                   file.remove();
-                  console.log('All files for ' + userId + ' were deleted');
+                  console.log('All files for ' + currUserId + ' were deleted');
                 } else {
                   console.error('No files found for ' + currUserId);
                 }
