@@ -152,7 +152,7 @@ describe('Test server routes', function() {
       user.save();
       var file = new File({"fileName": "myJournal", "content": "I know nothing"});
       file.save();
-
+      user.files.push(file._id);
       s3.putObject({Bucket: testBucket, Key: 'jonSnow/myJournal', Body: file.content}, function() {
           done();
       });

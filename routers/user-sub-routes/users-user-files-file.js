@@ -57,33 +57,33 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
             var fileId = user.files[i];
             File.findById(fileId, function(err, file) {
               if (file.fileName === currFile) {
-                  matchFound = true;
-                  var params = {
-                    Bucket: ourBucket,
-                    Key: userId + '/' + currFile,
-                    Body: newFileContents
+                matchFound = true;
+                var params = {
+                  Bucket: ourBucket,
+                  Key: userId + '/' + currFile,
+                  Body: newFileContents
+                }
+                console.log(params);
+                var url = s3.getSignedUrl('getObject', params, function(err, url) {
+                  if (err) return console.log(err);
+                  file.url = url;
+                });
+
+                s3.putObject(params, function(err, data) {
+                  if (err) {
+                    return console.log(err);
                   }
-                  console.log(params);
-                  var url = s3.getSignedUrl('getObject', params, function(err, url) {
-                    if (err) return console.log(err);
-                    file.url = url;
-                  });
+                });
 
-                  s3.putObject(params, function(err, data) {
-                    if (err) {
-                      return console.log(err);
-                    }
-                  });
-
-                  file.update({$set: {"fileName": currFile, "content": newFileContents}}, function(err, data) {
+                file.update({$set: {"fileName": currFile, "content": newFileContents}}, function(err, data) {
+                  if (err) console.log(err);
+                });
+                user.update({$set: {files: file._id}}, function(err, user) {
                     if (err) console.log(err);
-                  });
-                  user.update({$set: {files: file._id}}, function(err, user) {
-                      if (err) console.log(err);
-                      else console.log(user);
-                  });
-                  sendResSuccess(res, file.fileName + ' updated');
-                } else if ((i === user.files.length - 1) && (matchFound === false)) {
+                    else console.log(user);
+                });
+                sendResSuccess(res, file.fileName + ' updated');
+              } else if ((i === user.files.length - 1) && (matchFound === false)) {
                 sendError404(res, currFile);
               }
             });
