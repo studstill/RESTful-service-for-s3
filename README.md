@@ -3,6 +3,10 @@
 - Open a terminal window and type `mongod`
 - Open another terminal window and clone this repo to a local directory
 - In the cloned repo directory, type `npm install`
+
+>NOTE: In order to test the s3 funtionality of this program, you must create and set environment variables for the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY with the credentials for your own s3 account.
+>http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html#Credentials_from_Environment_Variables
+
 - Then type `npm test`
 
 #Purpose of this application
