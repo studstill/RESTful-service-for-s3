@@ -80,19 +80,18 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
         if (user.files.length > 0) {
           for (var i = 0; i < user.files.length; i++) {
             (function(i, user) {
-              var fileName = user.files[i];
-              File.findById(fileName, function(err, file) {
+              var fileId = user.files[i];
+              File.findById(fileId, function(err, file) {
                 if (err) return res.status(500).json({msg: 'server error at /' + userId + '/files'});
                 if (file) {
                   file.remove();
-                  console.log(fileName);
-                  user.update({$pull: {files: fileName}}, function(err, data){
-                    console.log(err, data);
-                  });
                   console.log('All files for ' + userId + ' were deleted');
                 } else {
                   console.error('No files found for ' + userId);
                 }
+              });
+              user.update({$pull: {"files": fileId}}, {safe: true}, function(err, data){
+                console.log(err, data);
               });
             })(i, user);
           }
