@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var fileSchema = mongoose.Schema({
-  fileName: String,
-  content: String,
+  fileName: {type: String, required: 'fileName is required'},
+  content: {type: String, required: 'file content is required'},
   url: String
 });
 

@@ -18,11 +18,13 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
           return console.log(err);
         }
         if (user.files.length > 0) {
+          var matchFound = false;
           for (var i = 0; i < user.files.length; i++) {
             (function(i) {
               var fileId = user.files[i];
               File.findById(fileId, function(err, file) {
                 if (file.fileName === searchedFile) {
+                  matchFound = true;
                   var params = {Bucket: ourBucket, Key: userId + '/' + file.fileName};
                   console.log(file);
                   s3.getSignedUrl('getObject', params, function(err, url) {
@@ -31,7 +33,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                     sendResSuccess(res, url);
                     });
                   });
-                } else {
+                } else if ((i === user.files.length - 1) && (matchFound === false)) {
                   sendError404(res, searchedFile);
                 }
               });
