@@ -57,7 +57,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
             console.log(data);
           });
 
-          return res.json({msg: newFile.fileName + ' successfully uploaded for ' + currUserId});
+          res.json({msg: newFile.fileName + ' successfully uploaded for ' + currUserId});
           console.log(file);
 
           function update(user) {
@@ -65,31 +65,32 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
             user.save();
 
           }
-          User.findOne({username: currUserId}, function(err, user) {
-            if (err) {
-              return console.log(err);
-            }
-            var matchFound = false;
-            // User does not have any files
-            if (user.files.length === 0) {
-              update(user);
-            } else {
-              for (var i = 0; i < user.files.length; i++) {
-                (function(i) {
-                  var fileId = user.files[i];
-                  File.findById(fileId, function(err, file) {
-                    if (file.fileName === newFile.fileName) {
-                      matchFound = true;
-                      sendError404(res, newFile.fileName + ' already exists.')
-                    } else if (i === user.files.length - 1 && matchFound === false) {
-                      update(user);
-                    }
-                  });
-                })(i);
-              }
-            }
-          });
         }
+        User.findOne({username: currUserId}, function(err, user) {
+          if (err) {
+            return console.log(err);
+          }
+          var matchFound = false;
+          console.log(newFile);
+          // User does not have any files
+          if (user.files.length === 0) {
+            update(user);
+          } else {
+            for (var i = 0; i < user.files.length; i++) {
+              (function(i) {
+                var fileId = user.files[i];
+                File.findById(fileId, function(err, file) {
+                  if (file.fileName === newFile.fileName) {
+                    matchFound = true;
+                    sendError404(res, newFile.fileName + ' already exists.')
+                  } else if (i === user.files.length - 1 && matchFound === false) {
+                    update(user);
+                  }
+                });
+              })(i);
+            }
+          }
+        });
       });
     })
     .delete(function(req, res) {
