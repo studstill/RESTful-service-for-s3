@@ -31,6 +31,8 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                     sendResSuccess(res, url);
                     });
                   });
+                } else {
+                  sendError404(res, searchedFile);
                 }
               });
             })(i);
@@ -49,39 +51,40 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
         if (err) {
           return console.log(err);
         }
+        var matchFound = false;
         for (var i = 0; i < user.files.length; i++) {
           (function(i) {
             var fileId = user.files[i];
             File.findById(fileId, function(err, file) {
               if (file.fileName === currFile) {
-                var params = {
-                  Bucket: ourBucket,
-                  Key: userId + '/' + currFile,
-                  Body: newFileContents
-                }
-                console.log(params);
-                var url = s3.getSignedUrl('putObject', params, function(err, url) {
-                  if (err) return console.log(err);
-                  file.url = url;
-                });
-
-                s3.putObject(params, function(err, data) {
-                  if (err) {
-                    return console.log(err);
+                  matchFound = true;
+                  var params = {
+                    Bucket: ourBucket,
+                    Key: userId + '/' + currFile,
+                    Body: newFileContents
                   }
-                });
-                // file.content = newFileContents;
-                console.log(newFileContents);
-                console.log(fileId);
-                file.update({$set: {"content": newFileContents}}, function(err, data) {
-                  if (err) console.log(err);
-                });
-                User.findOne({username: userId}, function(err, user) {
-                  // user.files.push(file._id);
-                  user.update({$set: {files: file._id}}, {upsert: true});
-                  console.log(user);
-                });
-                sendResSuccess(res, file.fileName + ' updated');
+                  console.log(params);
+                  var url = s3.getSignedUrl('getObject', params, function(err, url) {
+                    if (err) return console.log(err);
+                    file.url = url;
+                  });
+
+                  s3.putObject(params, function(err, data) {
+                    if (err) {
+                      return console.log(err);
+                    }
+                  });
+
+                  file.update({$set: {"fileName": currFile, "content": newFileContents}}, function(err, data) {
+                    if (err) console.log(err);
+                  });
+                  user.update({$set: {files: file._id}}, function(err, user) {
+                      if (err) console.log(err);
+                      else console.log(user);
+                  });
+                  sendResSuccess(res, file.fileName + ' updated');
+                } else if ((i === user.files.length - 1) && (matchFound === false)) {
+                sendError404(res, currFile);
               }
             });
           })(i);
@@ -123,8 +126,11 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                     console.log(data);
                     sendResSuccess(res, data.Deleted);
                   });
+                } else {
+                  sendError404(res, currFile);
                 }
-              })
+              });
+
             })(i);
           }
         } else {
