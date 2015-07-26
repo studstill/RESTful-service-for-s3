@@ -4,7 +4,7 @@
   "description": "Server that saves file using AWS",
   "main": "server.js",
   "scripts": {
-    "test": "mocha test/"
+    "test": "mocha tests/"
   },
   "author": "Jason Studstill, Vi Dang, Hana Fallisgaard",
   "license": "ISC",
