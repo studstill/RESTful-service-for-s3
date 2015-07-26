@@ -6,7 +6,11 @@ var User = require('../models/User');
 var File = require('../models/File');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
-var ourBucket = 'vihjayjay';
+var ourBucket = process.env.MY_TEST_BUCKET || 'vihjayjay';
+
+AWS.config.loadFromPath(__dirname + '/../config.json');
+process.env.AWS_ACCESS_KEY_ID = AWS.config.credentials.accessKeyId;
+process.env.AWS_SECRET_ACCESS_KEY = AWS.config.credentials.secretAccessKey;
 
 module.exports = function(router) {
   router.use(bodyParser.json());
@@ -14,7 +18,6 @@ module.exports = function(router) {
   // list of Variables
   // router, mongoose, bodyParser, EventEmitter, ee, User, File, AWS, s3, ourBucket
 
-  AWS.config.loadFromPath(__dirname + '/../config.json');
 
   // Handle GET and POST on /users
   require('./user-sub-routes/users.js')(router, mongoose, bodyParser,
