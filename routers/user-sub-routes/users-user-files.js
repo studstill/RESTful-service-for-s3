@@ -13,25 +13,17 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
     .get(function(req, res) {
       var userId = req.params.user;
       var info = [];
-      User.findOne({username: userId}, function(err, user) {
-        if (err) return console.log(err);
-        if (user.files.length > 0) {
-          for (var i = 0; i < user.files.length; i++) {
-            (function(i, info) {
-              var fileName = user.files[i];
-              File.findById(fileName, function(err, file) {
-                if (err) return console.log(err);
-                info.push(file.fileName);
-                if (i === user.files.length - 1) {
-                  sendResSuccess(res, info);
-                }
-              });
-            })(i, info);
-          }
-        } else {
-          sendError404(res, 'This user does not have any files');
-        }
-      });
+      User.findOne({username: userId})
+          .populate('files')
+          .exec(function(err, user) {
+            if (err) {
+              sendError404(res, err);
+            }
+            for (var i = 0; i < user.files.length; i++) {
+              info.push(user.files[i].fileName);
+            }
+            sendResSuccess(res, info);
+          });
     })
     .post(function(req, res) {
       var currUserId = req.params.user;
