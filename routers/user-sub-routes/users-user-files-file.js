@@ -124,7 +124,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                       return console.log(err);
                     }
                     console.log(data);
-                    sendResSuccess(res, data.Deleted);
+                    sendResSuccess(res, currFile + ' was deleted');
                   });
                 } else {
                   sendError404(res, currFile);
