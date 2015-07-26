@@ -1,17 +1,16 @@
 module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
   File, AWS, s3, ourBucket) {
 
+  function sendResSuccess(res, data) {
+    res.json({msg: data});
+  }
+
+  function sendError404(res, data) {
+    res.status(404).json({msg: data});
+  }
+
   router.route('/:user/files')
     .get(function(req, res) {
-      var currUserId = req.params.user;
-      var params = {
-        Bucket: ourBucket, /* required */
-        Prefix: currUserId
-      };
-      s3.listObjects(params, function(err, data) {
-        if (err) console.log(err, err.stack); // an error occurred
-        console.log(data.Contents);
-      });
       var userId = req.params.user;
       var info = [];
       User.findOne({username: userId}, function(err, user) {
@@ -20,63 +19,79 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
           for (var i = 0; i < user.files.length; i++) {
             (function(i, info) {
               var fileName = user.files[i];
-              console.log(fileName);
               File.findById(fileName, function(err, file) {
                 if (err) return console.log(err);
                 info.push(file.fileName);
                 if (i === user.files.length - 1) {
-                  sendResponse(info);
+                  sendResSuccess(res, info);
                 }
               });
             })(i, info);
           }
         } else {
-          sendResponse(info);
+          sendError404(res, 'This user does not have any files');
         }
       });
-      function sendResponse(filesList) {
-        res.json({files: filesList});
-      };
     })
     .post(function(req, res) {
-      var userId = req.params.user;
-      var file = new File(req.body);
+      var currUserId = req.params.user;
+      var newFile = new File(req.body);
 
-      User.findOne({username: userId}, {file: file}, function(err, user) {
-        if (err) {
-          console.log('That filename already exists!');
-        }
-        User.findOne({username: userId}, function(err, user) {
-          user.files.push(file._id);
-          user.save();
-          console.log(user);
+      function update(user) {
+        user.files.push(newFile._id);
+        user.save();
+
+        var params = {
+          Bucket: ourBucket, 
+          Key: currUserId + '/' + newFile.fileName,
+          Body: newFile.content
+        };
+        var url = s3.getSignedUrl('putObject', params, function(err, url) {
+          if (err) return console.log(err);
+          newFile.url = url;
         });
-      });
 
-      var params = {Bucket: ourBucket, Key: userId + '/' + file.fileName,
-        Body: file.content };
-      var url = s3.getSignedUrl('putObject', params, function(err, url) {
-        if (err) return console.log(err);
-        file.url = url;
-      });
+        s3.putObject(params, function(err, data) {
+          if (err) return console.log(err);
+          console.log(data);
+        });
 
-      s3.putObject(params, function(err, data) {
-        if (err) return console.log(err);
-        console.log(data);
-      });
+        newFile.save(function(err, file) {
+          if (err) console.log(err);
+          console.log(file);
+        });
 
-      file.save(function(err, file) {
-        if (err) console.log(err);
-        console.log(file);
+        return res.json({msg: newFile.fileName + ' successfully uploaded for ' + currUserId});
+      }
+      User.findOne({username: currUserId}, function(err, user) {
+        if (err) {
+          return console.log(err);
+        }
+        var matchFound = false;
+        // User does not have any files
+        if (user.files.length === 0) {
+          update(user);
+        } else {
+          for (var i = 0; i < user.files.length; i++) {
+            (function(i) {
+              var fileId = user.files[i];
+              File.findById(fileId, function(err, file) {
+                if (file.fileName === newFile.fileName) {
+                  matchFound = true;
+                  sendError404(res, newFile.fileName + ' already exists.')
+                } else if (i === user.files.length - 1 && matchFound === false) {
+                  update(user);
+                }
+              });
+            })(i);
+          }
+        }
       });
-
-      res.json({msg: 'File successfully uploaded using ' + userId +
-        '/file post route!'});
     })
     .delete(function(req, res) {
-      var userId = req.params.user;
+      var currUserId = req.params.user;
 
-      User.findOne({username: userId}, function(err, user) {
+      User.findOne({username: currUserId}, function(err, user) {
         if (user.files.length > 0) {
           for (var i = 0; i < user.files.length; i++) {
             (function(i, user) {
@@ -85,9 +100,9 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                 if (err) return res.status(500).json({msg: 'server error at /' + userId + '/files'});
                 if (file) {
                   file.remove();
-                  console.log('All files for ' + userId + ' were deleted');
+                  console.log('All files for ' + currUserId + ' were deleted');
                 } else {
-                  console.error('No files found for ' + userId);
+                  console.error('No files found for ' + currUserId);
                 }
               });
               user.update({$pull: {"files": fileId}}, {safe: true}, function(err, data){
@@ -100,7 +115,7 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
 
       var params = {
         Bucket: ourBucket,
-        Prefix: userId
+        Prefix: currUserId
       };
 
       s3.listObjects(params, function(err, data) {
@@ -120,6 +135,6 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
           return console.log(data.Deleted.length);
         });
       });
-      res.json({msg: 'All files for ' + userId + ' were deleted'});
+      sendResSuccess(res, 'All files for ' + currUserId + ' have been deleted');
     });
 }
