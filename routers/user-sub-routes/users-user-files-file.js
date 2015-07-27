@@ -69,7 +69,6 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                     Body: newFileContents
                   }
                   file.update({$set: {"content": newFileContents}}, function(err, data) {
-                    console.log(newFileContents +  'this');
                     if (err) {
                       console.log(err);
                     } else {
@@ -82,11 +81,6 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
                         if (err) {
                           return console.log(err);
                         }
-                      });
-
-                      user.update({$set: {files: file._id}}, function(err, user) {
-                          if (err) console.log(err);
-                          else console.log(user);
                       });
                       sendResSuccess(res, file.fileName + ' updated');
                     }
