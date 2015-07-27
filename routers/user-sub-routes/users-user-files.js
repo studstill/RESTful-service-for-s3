@@ -34,55 +34,56 @@ module.exports = function(router, mongoose, bodyParser, EventEmitter, ee, User,
           return res.status(400).json({msg: 'Input does not match schema'});
           console.log(err);
         } else {
-          var params = {
-            Bucket: ourBucket,
-            Key: currUserId + '/' + newFile.fileName,
-            Body: newFile.content
-          };
-          var url = s3.getSignedUrl('putObject', params, function(err, url) {
-            if (err) return console.log(err);
-            newFile.url = url;
+          User.findOne({username: currUserId}, function(err, user) {
+            if (err) {
+              return console.log(err);
+            }
+            var matchFound = false;
+            // User does not have any files
+            if (user.files.length === 0) {
+              update(user);
+              saveToDb();
+            } else {
+              for (var i = 0; i < user.files.length; i++) {
+                (function(i) {
+                  var fileId = user.files[i];
+                  File.findById(fileId, function(err, file) {
+                    if (file.fileName === newFile.fileName) {
+                      matchFound = true;
+                      sendError404(res, newFile.fileName + ' already exists.')
+                    } else if (i === user.files.length - 1 && matchFound === false) {
+                      update(user);
+                      saveToDb();
+                    }
+                  });
+                })(i);
+              }
+            }
           });
-
-          s3.putObject(params, function(err, data) {
-            if (err) return console.log(err);
-            console.log(data);
-          });
-
-          res.json({msg: newFile.fileName + ' successfully uploaded for ' + currUserId});
-          console.log(file);
-
           function update(user) {
+            console.log(user);
             user.files.push(newFile._id);
             user.save();
+          }
+          function saveToDb() {
+            var params = {
+              Bucket: ourBucket,
+              Key: currUserId + '/' + newFile.fileName,
+              Body: newFile.content
+            };
+            var url = s3.getSignedUrl('putObject', params, function(err, url) {
+              if (err) return console.log(err);
+              newFile.url = url;
+            });
 
+            s3.putObject(params, function(err, data) {
+              if (err) return console.log(err);
+              console.log(data);
+            });
+
+            sendResSuccess(res, newFile.fileName + ' successfully uploaded for ' + currUserId);
           }
         }
-        User.findOne({username: currUserId}, function(err, user) {
-          if (err) {
-            return console.log(err);
-          }
-          var matchFound = false;
-          console.log(newFile);
-          // User does not have any files
-          if (user.files.length === 0) {
-            update(user);
-          } else {
-            for (var i = 0; i < user.files.length; i++) {
-              (function(i) {
-                var fileId = user.files[i];
-                File.findById(fileId, function(err, file) {
-                  if (file.fileName === newFile.fileName) {
-                    matchFound = true;
-                    sendError404(res, newFile.fileName + ' already exists.')
-                  } else if (i === user.files.length - 1 && matchFound === false) {
-                    update(user);
-                  }
-                });
-              })(i);
-            }
-          }
-        });
       });
     })
     .delete(function(req, res) {
